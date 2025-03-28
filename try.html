@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PDF OCR Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    #canvas-container {
+      margin-top: 20px;
+    }
+    canvas {
+      max-width: 100%;
+      border: 1px solid #ddd;
+      margin-bottom: 20px;
+    }
+    #output {
+      padding: 10px;
+      border: 1px solid #ccc;
+      background: #f9f9f9;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>PDF OCR Test</h1>
+  <input type="file" id="pdf-file" accept="application/pdf">
+  <div id="canvas-container"></div>
+  <div id="output">Extracted text will appear here.</div>
+
+  <!-- PDF.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <!-- Tesseract.js library -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@v4.0.3/dist/tesseract.min.js"></script>
+
+  <script>
+    // Set up PDF.js worker (from CDN)
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+    // When a file is selected...
+    document.getElementById('pdf-file').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function() {
+          const arrayBuffer = reader.result;
+          // Load PDF using PDF.js
+          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+          loadingTask.promise.then(function(pdf) {
+            console.log('PDF loaded');
+            // Get the first page
+            pdf.getPage(1).then(function(page) {
+              const scale = 3; // Increase scale for higher resolution (adjust as needed)
+              const viewport = page.getViewport({ scale: scale });
+              const canvas = document.createElement('canvas');
+              const context = canvas.getContext('2d');
+              canvas.width = viewport.width;
+              canvas.height = viewport.height;
+
+              const renderContext = {
+                canvasContext: context,
+                viewport: viewport
+              };
+
+              // Render the page into the canvas
+              page.render(renderContext).promise.then(function() {
+                console.log('Page rendered');
+                // Show the rendered canvas on the page
+                const container = document.getElementById('canvas-container');
+                container.innerHTML = ''; // Clear previous canvas if any
+                container.appendChild(canvas);
+
+                // Convert the canvas to an image data URL
+                const dataURL = canvas.toDataURL('image/png');
+                console.log('Rendered image data URL:', dataURL);
+
+                // Perform OCR on the image using Tesseract.js
+                Tesseract.recognize(
+                  dataURL,
+                  'eng',
+                  { logger: m => console.log(m) }
+                ).then(({ data: { text } }) => {
+                  console.log('OCR result:', text);
+                  document.getElementById('output').textContent = text;
+                }).catch(err => {
+                  console.error('Error during OCR:', err);
+                  document.getElementById('output').textContent = 'Error during OCR: ' + err;
+                });
+              });
+            });
+          }, function (reason) {
+            console.error('Error loading PDF:', reason);
+          });
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    });
+  </script>
+</body>
+</html>

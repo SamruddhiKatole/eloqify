@@ -43,7 +43,7 @@ export default function Page() {
             <div className="relative -mt-16 block lg:hidden">
               <a
                 className="inline-flex size-16 items-center justify-center rounded-full bg-white text-blue-600 sm:size-20 dark:bg-gray-900"
-                href="#"
+                href="/dashboard"
               >
                 <span className="sr-only">Home</span>
                 <svg
@@ -75,3 +75,5 @@ export default function Page() {
     </section>
   );
 }
+
+
